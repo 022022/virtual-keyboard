@@ -1,6 +1,6 @@
 class Keyboard {
   constructor() {
-    const engKeys = {
+    this.engKeys = {
       Backquote: '`',
       Digit1: '1',
       Digit2: '2',
@@ -67,7 +67,7 @@ class Keyboard {
       ControlRight: 'Control',
     };
 
-    const ruKeys = {
+    this.ruKeys = {
       Backquote: 'ё',
       Digit1: '1',
       Digit2: '2',
@@ -134,21 +134,12 @@ class Keyboard {
       ControlRight: 'Control',
     };
 
-    if (localStorage.getItem('lang') === 'ru') {
-      this.keysObj = ruKeys;
-    } else {
-      this.keysObj = engKeys; // makes eng default
-    }
+    this.ctrlFlag = false;
+    this.altFlag = false;
+    this.shiftFlag = false;
+    this.capsFlag = false;
 
-    if (localStorage.getItem('keyCase') === 'upper') {
-      this.keyCase = 'upper';
-    } else {
-      this.keyCase = 'lower'; // так по умолчанию получается lower
-    }
-    // еще используются
-
-    // this.wrapper;
-    // this.printedText;
+    this.textarea = {};
 
     this.render();
     this.addPhysicalKeyboardListeners();
@@ -157,20 +148,54 @@ class Keyboard {
   render() {
     this.wrapper = document.createElement('div');
     this.wrapper.classList.add('wrapper');
+    document.body.prepend(this.wrapper);
 
     this.createInfo();
 
-    document.body.prepend(this.wrapper);
+    this.createKeyboard();
+  }
 
-    const keyboard = document.createElement('div');
+  createKeyboard(animateIds = null) {
+    this.ctrlFlag = false;
+    this.altFlag = false;
+    this.shiftFlag = false;
+
+    if (localStorage.getItem('lang') === 'ru') {
+      this.keysObj = this.ruKeys;
+    } else {
+      localStorage.setItem('lang', 'en');
+      this.keysObj = this.engKeys;
+    }
+
+    if (localStorage.getItem('keyCase') === 'upper') {
+      this.keyCase = 'upper';
+    } else {
+      this.keyCase = 'lower'; //
+    }
+
+    let keyboard;
+    if (document.getElementById('keyboard')) {
+      keyboard = document.getElementById('keyboard');
+      keyboard.innerHTML = '';
+    } else {
+      keyboard = document.createElement('div');
+      keyboard.setAttribute('id', 'keyboard');
+    }
+
     keyboard.classList.add('keyboard');
 
     Object.keys(this.keysObj).map((item) => {
       const key = this.createOneKey(item, this.keysObj[item]);
       keyboard.append(key);
       this.wrapper.append(keyboard);
-      return keyboard; // lint required
+      return keyboard;
     });
+
+    this.focusHandler();
+
+    if (animateIds) {
+      animateIds.map((item) => document.getElementById(item).classList.add('animateButton'));
+    }
   }
 
   createInfo() {
@@ -188,7 +213,10 @@ class Keyboard {
     this.printedText = document.createElement('textarea');
     this.printedText.classList.add('printed-text');
     this.printedText.setAttribute('id', 'printed-text');
-    this.printedText.setAttribute('autofocus', 'autofocus');
+
+    if (this.alreadyHaveText) {
+      this.printedText.value = this.alreadyHaveText;
+    }
 
     this.wrapper.append(heading);
     this.wrapper.append(info);
@@ -244,10 +272,9 @@ class Keyboard {
       case 'CapsLock':
         key.innerHTML = 'Caps lock';
         key.classList.add('keyboard__key_size_l');
-        if (localStorage.getItem('keyCase') === 'upper') {
+        if (this.capsFlag) {
           key.classList.add('keyboard__key_switch');
         }
-
         break;
       case 'ArrowLeft':
         key.innerHTML = '&larr;';
@@ -263,11 +290,11 @@ class Keyboard {
         break;
 
       default:
-        if (this.keyCase === 'lower') {
-          key.innerHTML = keyKey.toLowerCase();
-        }
-        if (this.keyCase === 'upper') {
+
+        if (this.capsFlag) {
           key.innerHTML = keyKey.toUpperCase();
+        } else {
+          key.innerHTML = keyKey.toLowerCase();
         }
     }
 
@@ -276,9 +303,121 @@ class Keyboard {
 
     return key;
   }
+
+  clickHandler = (event) => {
+    const clickedId = event.target.id;
+    let char;
+
+    this.textarea = document.getElementById('printed-text');
+
+    switch (clickedId) {
+      case 'CapsLock':
+        this.capsFlag = !this.capsFlag;
+        this.createKeyboard();
+        return;
+
+      case 'ArrowLeft':
+        char = '←';
+        this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+        break;
+      case 'ArrowRight':
+        char = '→';
+        this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+        break;
+      case 'ArrowUp':
+        char = '↑';
+        this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+        break;
+      case 'ArrowDown':
+        char = '↓';
+        this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+        break;
+
+      case 'Enter':
+
+        char = '\n';
+        this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+        break;
+
+      case 'Space':
+        char = ' ';
+        this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+        break;
+
+      case 'Tab':
+        char = '\t';
+        this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+        break;
+
+      case 'Backspace':
+        if (this.textarea.selectionStart === this.textarea.selectionEnd) {
+          this.textarea.setRangeText('', this.textarea.selectionStart - 1, this.textarea.selectionEnd, 'end');
+        } else {
+          this.textarea.setRangeText('', this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+        }
+
+        break;
+
+      case 'Delete':
+        if (this.textarea.selectionStart === this.textarea.selectionEnd) {
+          this.textarea.setRangeText('', this.textarea.selectionStart, this.textarea.selectionEnd + 1, 'end');
+        } else {
+          this.textarea.setRangeText('', this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+        }
+        break;
+
+      case 'ShiftRight':
+      case 'ControlRight':
+      case 'AltRight':
+      case 'MetaLeft':
+        event.target.classList.toggle('active');
+        break;
+
+      case 'ShiftLeft':
+        event.target.classList.toggle('active');
+        this.shiftFlag = !this.shiftFlag;
+        break;
+
+      case 'ControlLeft':
+        event.target.classList.toggle('active');
+        if (this.ctrlFlag === false) {
+          this.ctrlFlag = true;
+          if (this.altFlag === true) {
+            this.switchLang();
+          }
+        } else {
+          this.ctrlFlag = false;
+        }
+        break;
+
+      case 'AltLeft':
+        event.target.classList.toggle('active');
+        if (this.altFlag === false) {
+          this.altFlag = true;
+          if (this.ctrlFlag === true) {
+            this.switchLang();
+          }
+        } else {
+          this.altFlag = false;
+        }
+        break;
+
+      default:
+        if (this.capsFlag || this.shiftFlag) {
+          char = this.keysObj[clickedId].toUpperCase();
+        } else {
+          char = this.keysObj[clickedId].toLowerCase();
+        }
+
+        this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+    }
+
+    this.textarea.focus();
+  };
 }
-function createKeyboard() {
+
+function createKeyboardPage() {
   return new Keyboard();
 }
 
-window.addEventListener('load', createKeyboard());
+window.addEventListener('load', createKeyboardPage());
