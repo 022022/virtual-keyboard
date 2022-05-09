@@ -88,12 +88,31 @@ a {
 }
 
 .keyboard__key:active, .active{
-  background-color: #ebf4ff;
+  background-color: #c8e1ff;
   border: 1px solid rgba(61, 82, 97, 0.2);
   -webkit-box-shadow: 1px 1px 11px 1px rgb(61 82 97 / 20%) inset;
   -moz-box-shadow: 1px 1px 11px 1px rgba(61, 82, 97, 0.2) inset;
   box-shadow: 1px 1px 5px 3px rgb(59 143 203 / 20%) inset;
+}
 
+.animateButton{
+  animation-name: active-key;
+  animation-duration: 0.3s;
+}
+
+
+@keyframes active-key {
+  0% {
+    -webkit-box-shadow: 1px 1px 11px 1px rgba(61, 82, 97, 0.2);
+    -moz-box-shadow: 1px 1px 11px 1px rgba(61, 82, 97, 0.2);
+    box-shadow: 1px 1px 11px 1px rgba(61, 82, 97, 0.2);
+  }
+  100% {
+    background-color: #c8e1ff;
+    -webkit-box-shadow: 1px 1px 11px 1px rgb(61 82 97 / 20%) inset;
+    -moz-box-shadow: 1px 1px 11px 1px rgba(61, 82, 97, 0.2) inset;
+    box-shadow: 1px 1px 5px 3px rgb(59 143 203 / 20%) inset;
+  }
 }
 
 
@@ -134,24 +153,4 @@ a {
   top: 5px;
   right: 5px;
   border-radius: 50%;
-}
-
-
-.animateButton{
-  animation-name: active-key;
-  animation-duration: 0.3s;
-}
-
-
-@keyframes active-key {
-  0% {
-    -webkit-box-shadow: 1px 1px 11px 1px rgba(61, 82, 97, 0.2);
-    -moz-box-shadow: 1px 1px 11px 1px rgba(61, 82, 97, 0.2);
-    box-shadow: 1px 1px 11px 1px rgba(61, 82, 97, 0.2);
-  }
-  100% {
-    -webkit-box-shadow: 1px 1px 11px 1px rgb(61 82 97 / 20%) inset;
-    -moz-box-shadow: 1px 1px 11px 1px rgba(61, 82, 97, 0.2) inset;
-    box-shadow: 1px 1px 5px 3px rgb(59 143 203 / 20%) inset;
-  }
 }

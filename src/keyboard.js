@@ -136,7 +136,6 @@ class Keyboard {
 
     this.ctrlFlag = false;
     this.altFlag = false;
-    this.shiftFlag = false;
     this.capsFlag = false;
 
     this.textarea = {};
@@ -158,7 +157,6 @@ class Keyboard {
   createKeyboard(animateIds = null) {
     this.ctrlFlag = false;
     this.altFlag = false;
-    this.shiftFlag = false;
 
     if (localStorage.getItem('lang') === 'ru') {
       this.keysObj = this.ruKeys;
@@ -170,7 +168,7 @@ class Keyboard {
     if (localStorage.getItem('keyCase') === 'upper') {
       this.keyCase = 'upper';
     } else {
-      this.keyCase = 'lower'; //
+      this.keyCase = 'lower';
     }
 
     let keyboard;
@@ -315,7 +313,6 @@ class Keyboard {
         this.capsFlag = !this.capsFlag;
         this.createKeyboard();
         return;
-
       case 'ArrowLeft':
         char = '←';
         this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
@@ -332,9 +329,7 @@ class Keyboard {
         char = '↓';
         this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
         break;
-
       case 'Enter':
-
         char = '\n';
         this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
         break;
@@ -355,7 +350,6 @@ class Keyboard {
         } else {
           this.textarea.setRangeText('', this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
         }
-
         break;
 
       case 'Delete':
@@ -367,15 +361,11 @@ class Keyboard {
         break;
 
       case 'ShiftRight':
+      case 'ShiftLeft':
       case 'ControlRight':
       case 'AltRight':
       case 'MetaLeft':
         event.target.classList.toggle('active');
-        break;
-
-      case 'ShiftLeft':
-        event.target.classList.toggle('active');
-        this.shiftFlag = !this.shiftFlag;
         break;
 
       case 'ControlLeft':
@@ -403,16 +393,75 @@ class Keyboard {
         break;
 
       default:
-        if (this.capsFlag || this.shiftFlag) {
+        if (this.capsFlag) {
           char = this.keysObj[clickedId].toUpperCase();
         } else {
           char = this.keysObj[clickedId].toLowerCase();
         }
-
         this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
     }
 
     this.textarea.focus();
+  };
+
+  switchLang() {
+    const lang = localStorage.getItem('lang');
+
+    if (lang === 'ru') {
+      localStorage.setItem('lang', 'en');
+    }
+    if (lang === 'en') {
+      localStorage.setItem('lang', 'ru');
+    }
+
+    this.createKeyboard(['ControlLeft', 'AltLeft']);
+  }
+
+  focusHandler() {
+    this.textarea = document.getElementById('printed-text');
+    this.textarea.focus();
+  }
+
+  addPhysicalKeyboardListeners() {
+    document.addEventListener('keydown', this.physicalKeyHandler);
+
+    document.addEventListener('keyup', (event) => {
+      if (document.getElementById(event.code)) {
+        document.getElementById(event.code).classList.remove('active');
+      }
+    });
+  }
+
+  physicalKeyHandler = (event) => {
+    const pressedPhysicalButton = document.getElementById(event.code);
+
+    if (pressedPhysicalButton) {
+      this.textarea = document.getElementById('printed-text');
+      pressedPhysicalButton.classList.add('active');
+
+      if (pressedPhysicalButton.id === 'Tab') {
+        event.preventDefault();
+        this.textarea.setRangeText('\t', this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+        this.focusHandler();
+      }
+
+      if (event.altKey || event.ctrlKey) {
+        event.preventDefault();
+        this.focusHandler();
+      }
+
+      if (pressedPhysicalButton.id === 'CapsLock') {
+        if (this.physicalCapsFlag !== event.getModifierState('CapsLock')) {
+          this.physicalCapsFlag = event.getModifierState('CapsLock');
+          this.capsFlag = this.physicalCapsFlag;
+          this.createKeyboard(['CapsLock']);
+        }
+      }
+
+      if (event.ctrlKey && event.altKey) {
+        this.switchLang();
+      }
+    }
   };
 }
 
