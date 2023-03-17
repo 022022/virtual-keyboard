@@ -142,6 +142,8 @@ class Keyboard {
 
     this.render();
     this.addPhysicalKeyboardListeners();
+
+    this.timerId;
   }
 
   render() {
@@ -265,7 +267,6 @@ class Keyboard {
       case 'Delete':
         key.innerHTML = 'Del';
         key.classList.add('keyboard__key_size_m');
-
         break;
       case 'CapsLock':
         key.innerHTML = 'Caps lock';
@@ -296,8 +297,14 @@ class Keyboard {
         }
     }
 
-    key.addEventListener('mousedown', this.clickHandler);
-    key.addEventListener('mouseup', this.focusHandler);
+    key.addEventListener('mousedown', (event) => {
+      this.timerId = setInterval(() => this.clickHandler(event), 50);
+    });
+
+    key.addEventListener('mouseup', () => {
+      clearInterval(this.timerId);
+      this.focusHandler();
+    });
 
     return key;
   }
@@ -311,6 +318,7 @@ class Keyboard {
     switch (clickedId) {
       case 'CapsLock':
         this.capsFlag = !this.capsFlag;
+        clearInterval(this.timerId);
         this.createKeyboard();
         return;
       case 'ArrowLeft':
@@ -345,18 +353,16 @@ class Keyboard {
         break;
 
       case 'Backspace':
-        if (this.textarea.selectionStart === this.textarea.selectionEnd) {
+        if (this.textarea.selectionStart === this.textarea.selectionEnd
+          && this.textarea.selectionStart > 0
+          ) {
           this.textarea.setRangeText('', this.textarea.selectionStart - 1, this.textarea.selectionEnd, 'end');
-        } else {
-          this.textarea.setRangeText('', this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
         }
         break;
 
       case 'Delete':
         if (this.textarea.selectionStart === this.textarea.selectionEnd) {
           this.textarea.setRangeText('', this.textarea.selectionStart, this.textarea.selectionEnd + 1, 'end');
-        } else {
-          this.textarea.setRangeText('', this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
         }
         break;
 
