@@ -46,6 +46,7 @@ a {
   margin-bottom: 20px;
   border: 1px solid #c8c3c3;
   border-radius: 4px;
+  white-space: nowrap;
 }
 
 

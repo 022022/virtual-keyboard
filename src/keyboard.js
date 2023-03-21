@@ -140,8 +140,12 @@ class Keyboard {
 
     this.textarea = {};
 
+    this.position = null;
+
     this.render();
     this.addPhysicalKeyboardListeners();
+
+    this.timerId;
   }
 
   render() {
@@ -265,7 +269,6 @@ class Keyboard {
       case 'Delete':
         key.innerHTML = 'Del';
         key.classList.add('keyboard__key_size_m');
-
         break;
       case 'CapsLock':
         key.innerHTML = 'Caps lock';
@@ -296,14 +299,23 @@ class Keyboard {
         }
     }
 
-    key.addEventListener('mousedown', this.clickHandler);
-    key.addEventListener('mouseup', this.focusHandler);
+    key.addEventListener('mousedown', (event) => {
+      this.clickHandler(event);
+      this.timerId = setInterval(() => this.clickHandler(event), 200);
+    });
+
+    key.addEventListener('mouseup', () => {
+      clearInterval(this.timerId);
+      this.focusHandler();
+    });
 
     return key;
   }
 
   clickHandler = (event) => {
     const clickedId = event.target.id;
+    if(clickedId !== 'ArrowUp' && clickedId !== 'ArrowDown') this.position = null;
+
     let char;
 
     this.textarea = document.getElementById('printed-text');
@@ -311,24 +323,85 @@ class Keyboard {
     switch (clickedId) {
       case 'CapsLock':
         this.capsFlag = !this.capsFlag;
+        clearInterval(this.timerId);
         this.createKeyboard();
         return;
       case 'ArrowLeft':
-        char = '←';
-        this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+        this.initial = this.textarea.selectionStart;
+        if(this.initial !== 0 ){
+          this.textarea.selectionEnd = this.initial - 1;
+          this.textarea.selectionStart = this.initial - 1;
+        }
         break;
       case 'ArrowRight':
-        char = '→';
-        this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+        this.initial = this.textarea.selectionStart;
+        this.textarea.selectionEnd = this.initial + 1;
+        this.textarea.selectionStart = this.initial + 1;
+
         break;
-      case 'ArrowUp':
-        char = '↑';
-        this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+      case 'ArrowUp': {
+        const allText = '\n' + this.textarea.value + '\n';
+        let movedCursor;
+        const currentCursor = this.textarea.selectionStart;
+
+        this.position = this.position ?? currentCursor - allText.lastIndexOf('\n', currentCursor);
+
+        const prevLineEnds = allText.lastIndexOf('\n', currentCursor);
+        if(prevLineEnds === 0) {
+          movedCursor = 0
+        } else {
+          const prevLineBegins = allText.lastIndexOf('\n', prevLineEnds - 1);
+          const prevLineLength = prevLineEnds - prevLineBegins;
+
+          if(prevLineLength > this.position){
+            movedCursor = prevLineBegins + this.position;
+          } else {
+            movedCursor = prevLineBegins + prevLineLength - 1;
+          }
+          if(movedCursor === currentCursor) movedCursor = prevLineBegins;
+        }
+
+        this.textarea.selectionEnd = movedCursor;
+        this.textarea.selectionStart = movedCursor;
+
         break;
-      case 'ArrowDown':
-        char = '↓';
-        this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
+      }
+
+      case 'ArrowDown': {
+        const allText = '\n' + this.textarea.value + '\n';
+        let movedCursor;
+        const currentCursor = this.textarea.selectionStart;
+
+        this.position = this.position ?? currentCursor - allText.lastIndexOf('\n', currentCursor);
+
+        const nextLineBegins = allText.indexOf('\n', currentCursor);
+
+        const nextNextLineBegins = allText.indexOf('\n', nextLineBegins+1);
+        if(nextNextLineBegins === -1) {
+          movedCursor = this.textarea.value.length + 1;
+        } else {
+          const nextLineLength = nextNextLineBegins - nextLineBegins;
+
+          if(nextLineLength > this.position){
+            movedCursor = nextLineBegins + this.position;
+          } else {
+            movedCursor = nextLineBegins + nextLineLength - 1;
+          }
+          if(movedCursor === currentCursor) {
+            if(allText[nextNextLineBegins+1] === '\n'){
+              movedCursor = nextNextLineBegins;
+            } else {
+              movedCursor = nextNextLineBegins + this.position;
+            }
+          }
+        }
+
+        this.textarea.selectionEnd = movedCursor;
+        this.textarea.selectionStart = movedCursor;
+
         break;
+      }
+
       case 'Enter':
         char = '\n';
         this.textarea.setRangeText(char, this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
@@ -345,18 +418,16 @@ class Keyboard {
         break;
 
       case 'Backspace':
-        if (this.textarea.selectionStart === this.textarea.selectionEnd) {
+        if (this.textarea.selectionStart === this.textarea.selectionEnd
+          && this.textarea.selectionStart > 0
+          ) {
           this.textarea.setRangeText('', this.textarea.selectionStart - 1, this.textarea.selectionEnd, 'end');
-        } else {
-          this.textarea.setRangeText('', this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
         }
         break;
 
       case 'Delete':
         if (this.textarea.selectionStart === this.textarea.selectionEnd) {
           this.textarea.setRangeText('', this.textarea.selectionStart, this.textarea.selectionEnd + 1, 'end');
-        } else {
-          this.textarea.setRangeText('', this.textarea.selectionStart, this.textarea.selectionEnd, 'end');
         }
         break;
 
@@ -433,6 +504,7 @@ class Keyboard {
   }
 
   physicalKeyHandler = (event) => {
+    this.position = null;
     const pressedPhysicalButton = document.getElementById(event.code);
 
     if (pressedPhysicalButton) {
